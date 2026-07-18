@@ -81,8 +81,13 @@ export default function OstotorongoPage() {
                     <div className="profile-meta">
                       {[s.rollNumber, s.session].filter(Boolean).join(" · ") || "—"}
                     </div>
+                    {s.bloodGroup && (
+                      <div className="profile-meta" style={{ marginTop: 4 }}>
+                        BLOOD GROUP: {s.bloodGroup}
+                      </div>
+                    )}
                   </div>
-                 {s.bio && <p className="profile-bio">{s.bio}</p>}
+                  {s.bio && <p className="profile-bio">{s.bio}</p>}
                   {s.hometown && <div className="profile-meta">FROM {s.hometown.toUpperCase()}</div>}
                   {s.phone && <div className="profile-meta">PHONE: {s.phone}</div>}
                   {(s.email || s.phone || s.socialLink) && (
