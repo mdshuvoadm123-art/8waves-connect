@@ -82,11 +82,13 @@ export default function OstotorongoPage() {
                       {[s.rollNumber, s.session].filter(Boolean).join(" · ") || "—"}
                     </div>
                   </div>
-                  {s.bio && <p className="profile-bio">{s.bio}</p>}
+                 {s.bio && <p className="profile-bio">{s.bio}</p>}
                   {s.hometown && <div className="profile-meta">FROM {s.hometown.toUpperCase()}</div>}
-                  {(s.email || s.socialLink) && (
+                  {s.phone && <div className="profile-meta">PHONE: {s.phone}</div>}
+                  {(s.email || s.phone || s.socialLink) && (
                     <div className="profile-links">
                       {s.email && <a href={`mailto:${s.email}`}>Email</a>}
+                      {s.phone && <a href={`tel:${s.phone}`}>Call</a>}
                       {s.socialLink && (
                         <a href={s.socialLink} target="_blank" rel="noreferrer">
                           Profile
