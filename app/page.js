@@ -2,6 +2,7 @@ import NavBar from "@/components/NavBar";
 import Footer from "@/components/Footer";
 import WaveformHero from "@/components/WaveformHero";
 import NoticeBoard from "@/components/NoticeBoard";
+import ExamSyllabusBoard from "@/components/ExamSyllabusBoard";
 import Link from "next/link";
 
 export default function HomePage() {
@@ -29,6 +30,7 @@ export default function HomePage() {
           </div>
           <WaveformHero />
           <NoticeBoard />
+          <ExamSyllabusBoard />
         </div>
       </section>
 

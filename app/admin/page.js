@@ -121,21 +121,24 @@ function Dashboard({ username, onLogout }) {
   const [faculty, setFaculty] = useState([]);
   const [materials, setMaterials] = useState([]);
   const [notices, setNotices] = useState([]);
+  const [exams, setExams] = useState([]);
   const [loading, setLoading] = useState(true);
   const [notice, setNotice] = useState("");
 
   const loadAll = useCallback(async () => {
     setLoading(true);
-    const [sRes, fRes, mRes, nRes] = await Promise.all([
+    const [sRes, fRes, mRes, nRes, eRes] = await Promise.all([
       fetch("/api/students?all=1").then((r) => r.json()),
       fetch("/api/faculty").then((r) => r.json()),
       fetch("/api/materials").then((r) => r.json()),
       fetch("/api/notices").then((r) => r.json()),
+      fetch("/api/exams").then((r) => r.json()),
     ]);
     setStudents(sRes.students || []);
     setFaculty(fRes.faculty || []);
     setMaterials(mRes.materials || []);
     setNotices(nRes.notices || []);
+    setExams(eRes.exams || []);
     setLoading(false);
   }, []);
 
@@ -177,6 +180,12 @@ function Dashboard({ username, onLogout }) {
     await loadAll();
   }
 
+  async function deleteExam(id) {
+    if (!confirm("Remove this exam entry?")) return;
+    await fetch(`/api/exams/${id}`, { method: "DELETE" });
+    await loadAll();
+  }
+
   const pending = students.filter((s) => s.status === "pending");
 
   return (
@@ -206,6 +215,9 @@ function Dashboard({ username, onLogout }) {
           <button className={`tab ${tab === "notices" ? "is-active" : ""}`} onClick={() => setTab("notices")}>
             Notices ({notices.length})
           </button>
+          <button className={`tab ${tab === "exams" ? "is-active" : ""}`} onClick={() => setTab("exams")}>
+            Exams ({exams.length})
+          </button>
         </div>
 
         {notice && <div className="alert alert-success" style={{ marginBottom: 20 }}>{notice}</div>}
@@ -231,6 +243,9 @@ function Dashboard({ username, onLogout }) {
             )}
             {tab === "notices" && (
               <NoticesTab notices={notices} onChanged={loadAll} onDelete={deleteNotice} />
+            )}
+            {tab === "exams" && (
+              <ExamsTab exams={exams} onChanged={loadAll} onDelete={deleteExam} />
             )}
           </>
         )}
@@ -666,6 +681,102 @@ function NoticesTab({ notices, onChanged, onDelete }) {
               </div>
               <div className="row-actions">
                 <button className="btn btn-danger btn-sm" onClick={() => onDelete(n._id)}>Delete</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ExamsTab({ exams, onChanged, onDelete }) {
+  const EMPTY = { title: "", examDate: "", details: "", link: "", order: 0 };
+  const [form, setForm] = useState(EMPTY);
+  const [saving, setSaving] = useState(false);
+  const [status, setStatus] = useState({ type: "", message: "" });
+
+  function handleChange(e) {
+    const { name, value } = e.target;
+    setForm((f) => ({ ...f, [name]: name === "order" ? Number(value) : value }));
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setSaving(true);
+    setStatus({ type: "", message: "" });
+    try {
+      const res = await fetch("/api/exams", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Couldn't add this exam entry.");
+      setForm(EMPTY);
+      setStatus({ type: "success", message: "Exam entry added." });
+      onChanged();
+    } catch (err) {
+      setStatus({ type: "error", message: err.message });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div>
+      <form className="form" onSubmit={handleSubmit} style={{ marginBottom: 40 }}>
+        <div className="form-note">
+          Shows up in the eye-catching "Upcoming Exam Syllabus" section on the homepage, right below the notice bar.
+        </div>
+        <div className="field">
+          <label>Title *</label>
+          <input name="title" value={form.title} onChange={handleChange} placeholder="e.g. Fluid Mechanics Midterm" required />
+        </div>
+        <div className="field">
+          <label>Exam date</label>
+          <input name="examDate" value={form.examDate} onChange={handleChange} placeholder="e.g. August 5, 2026" />
+        </div>
+        <div className="field full">
+          <label>Syllabus / topics</label>
+          <textarea name="details" value={form.details} onChange={handleChange} maxLength={800} placeholder="What's covered in this exam" />
+        </div>
+        <div className="field">
+          <label>Full syllabus link (optional)</label>
+          <input name="link" value={form.link} onChange={handleChange} placeholder="https://drive.google.com/..." />
+        </div>
+        <div className="field">
+          <label>Display order</label>
+          <input name="order" type="number" value={form.order} onChange={handleChange} />
+        </div>
+        {status.message && (
+          <div className={`alert ${status.type === "error" ? "alert-error" : "alert-success"}`}>
+            {status.message}
+          </div>
+        )}
+        <div className="field full">
+          <button className="btn btn-primary" type="submit" disabled={saving}>
+            {saving ? "Adding…" : "Add exam entry"}
+          </button>
+        </div>
+      </form>
+
+      {exams.length === 0 ? (
+        <div className="empty-state">No exam entries added yet.</div>
+      ) : (
+        <div>
+          {exams.map((e) => (
+            <div className="queue-item" key={e._id}>
+              <div className="details">
+                <h4>{e.title}</h4>
+                <div className="kv">
+                  {e.examDate && <div><b>Date:</b> {e.examDate}</div>}
+                  {e.details && <div><b>Details:</b> {e.details}</div>}
+                  {e.link && <div><b>Link:</b> {e.link}</div>}
+                </div>
+              </div>
+              <div className="row-actions">
+                <button className="btn btn-danger btn-sm" onClick={() => onDelete(e._id)}>Delete</button>
               </div>
             </div>
           ))}
