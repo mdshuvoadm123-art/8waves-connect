@@ -71,11 +71,7 @@ export default function HomePage() {
             <div className="channel-card coral">
               <div className="channel-freq">CH. 03 — 5.2 Hz</div>
               <h3>MATERIALS</h3>
-              <p>
-                Course folders on Google Drive — Software, 1-1, 1-2, 2-1 and
-                more — kept up to date by the admin. One click opens the
-                folder.
-              </p>
+              <p>Here is your course materials.</p>
               <div className="channel-actions">
                 <Link href="/materials" className="btn btn-ghost btn-sm">Browse materials</Link>
               </div>
