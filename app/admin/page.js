@@ -120,19 +120,22 @@ function Dashboard({ username, onLogout }) {
   const [students, setStudents] = useState([]);
   const [faculty, setFaculty] = useState([]);
   const [materials, setMaterials] = useState([]);
+  const [notices, setNotices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [notice, setNotice] = useState("");
 
   const loadAll = useCallback(async () => {
     setLoading(true);
-    const [sRes, fRes, mRes] = await Promise.all([
+    const [sRes, fRes, mRes, nRes] = await Promise.all([
       fetch("/api/students?all=1").then((r) => r.json()),
       fetch("/api/faculty").then((r) => r.json()),
       fetch("/api/materials").then((r) => r.json()),
+      fetch("/api/notices").then((r) => r.json()),
     ]);
     setStudents(sRes.students || []);
     setFaculty(fRes.faculty || []);
     setMaterials(mRes.materials || []);
+    setNotices(nRes.notices || []);
     setLoading(false);
   }, []);
 
@@ -168,6 +171,12 @@ function Dashboard({ username, onLogout }) {
     await loadAll();
   }
 
+  async function deleteNotice(id) {
+    if (!confirm("Remove this notice?")) return;
+    await fetch(`/api/notices/${id}`, { method: "DELETE" });
+    await loadAll();
+  }
+
   const pending = students.filter((s) => s.status === "pending");
 
   return (
@@ -194,6 +203,9 @@ function Dashboard({ username, onLogout }) {
           <button className={`tab ${tab === "materials" ? "is-active" : ""}`} onClick={() => setTab("materials")}>
             Materials ({materials.length})
           </button>
+          <button className={`tab ${tab === "notices" ? "is-active" : ""}`} onClick={() => setTab("notices")}>
+            Notices ({notices.length})
+          </button>
         </div>
 
         {notice && <div className="alert alert-success" style={{ marginBottom: 20 }}>{notice}</div>}
@@ -216,6 +228,9 @@ function Dashboard({ username, onLogout }) {
             )}
             {tab === "materials" && (
               <MaterialsTab materials={materials} onChanged={loadAll} onDelete={deleteMaterial} />
+            )}
+            {tab === "notices" && (
+              <NoticesTab notices={notices} onChanged={loadAll} onDelete={deleteNotice} />
             )}
           </>
         )}
@@ -579,6 +594,81 @@ function MaterialsTab({ materials, onChanged, onDelete }) {
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function NoticesTab({ notices, onChanged, onDelete }) {
+  const EMPTY = { message: "", order: 0 };
+  const [form, setForm] = useState(EMPTY);
+  const [saving, setSaving] = useState(false);
+  const [status, setStatus] = useState({ type: "", message: "" });
+
+  function handleChange(e) {
+    const { name, value } = e.target;
+    setForm((f) => ({ ...f, [name]: name === "order" ? Number(value) : value }));
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setSaving(true);
+    setStatus({ type: "", message: "" });
+    try {
+      const res = await fetch("/api/notices", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Couldn't add this notice.");
+      setForm(EMPTY);
+      setStatus({ type: "success", message: "Notice added." });
+      onChanged();
+    } catch (err) {
+      setStatus({ type: "error", message: err.message });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div>
+      <form className="form" onSubmit={handleSubmit} style={{ marginBottom: 40 }}>
+        <div className="form-note">
+          Notices show up right below the wave animation on the homepage, newest first.
+        </div>
+        <div className="field full">
+          <label>Message *</label>
+          <textarea name="message" value={form.message} onChange={handleChange} maxLength={300} placeholder="e.g. Class postponed to 4 PM tomorrow." required />
+        </div>
+        {status.message && (
+          <div className={`alert ${status.type === "error" ? "alert-error" : "alert-success"}`}>
+            {status.message}
+          </div>
+        )}
+        <div className="field full">
+          <button className="btn btn-primary" type="submit" disabled={saving}>
+            {saving ? "Posting…" : "Post notice"}
+          </button>
+        </div>
+      </form>
+
+      {notices.length === 0 ? (
+        <div className="empty-state">No notices posted yet.</div>
+      ) : (
+        <div>
+          {notices.map((n) => (
+            <div className="queue-item" key={n._id}>
+              <div className="details">
+                <p style={{ fontSize: 14, color: "var(--text)" }}>{n.message}</p>
+              </div>
+              <div className="row-actions">
+                <button className="btn btn-danger btn-sm" onClick={() => onDelete(n._id)}>Delete</button>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>
