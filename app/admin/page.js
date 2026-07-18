@@ -119,17 +119,20 @@ function Dashboard({ username, onLogout }) {
   const [tab, setTab] = useState("queue");
   const [students, setStudents] = useState([]);
   const [faculty, setFaculty] = useState([]);
+  const [materials, setMaterials] = useState([]);
   const [loading, setLoading] = useState(true);
   const [notice, setNotice] = useState("");
 
   const loadAll = useCallback(async () => {
     setLoading(true);
-    const [sRes, fRes] = await Promise.all([
+    const [sRes, fRes, mRes] = await Promise.all([
       fetch("/api/students?all=1").then((r) => r.json()),
       fetch("/api/faculty").then((r) => r.json()),
+      fetch("/api/materials").then((r) => r.json()),
     ]);
     setStudents(sRes.students || []);
     setFaculty(fRes.faculty || []);
+    setMaterials(mRes.materials || []);
     setLoading(false);
   }, []);
 
@@ -159,6 +162,12 @@ function Dashboard({ username, onLogout }) {
     await loadAll();
   }
 
+  async function deleteMaterial(id) {
+    if (!confirm("Remove this material permanently?")) return;
+    await fetch(`/api/materials/${id}`, { method: "DELETE" });
+    await loadAll();
+  }
+
   const pending = students.filter((s) => s.status === "pending");
 
   return (
@@ -182,6 +191,9 @@ function Dashboard({ username, onLogout }) {
           <button className={`tab ${tab === "faculty" ? "is-active" : ""}`} onClick={() => setTab("faculty")}>
             Faculty ({faculty.length})
           </button>
+          <button className={`tab ${tab === "materials" ? "is-active" : ""}`} onClick={() => setTab("materials")}>
+            Materials ({materials.length})
+          </button>
         </div>
 
         {notice && <div className="alert alert-success" style={{ marginBottom: 20 }}>{notice}</div>}
@@ -201,6 +213,9 @@ function Dashboard({ username, onLogout }) {
             )}
             {tab === "faculty" && (
               <FacultyTab faculty={faculty} onChanged={loadAll} />
+            )}
+            {tab === "materials" && (
+              <MaterialsTab materials={materials} onChanged={loadAll} onDelete={deleteMaterial} />
             )}
           </>
         )}
@@ -312,6 +327,7 @@ function FacultyTab({ faculty, onChanged }) {
   const [form, setForm] = useState(EMPTY_FACULTY);
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const [status, setStatus] = useState({ type: "", message: "" });
 
   function handleChange(e) {
     setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
@@ -320,23 +336,30 @@ function FacultyTab({ faculty, onChanged }) {
   async function handleSubmit(e) {
     e.preventDefault();
     setSaving(true);
+    setStatus({ type: "", message: "" });
     try {
-      if (editingId) {
-        await fetch(`/api/faculty/${editingId}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(form),
-        });
-      } else {
-        await fetch("/api/faculty", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(form),
-        });
+      const url = editingId ? `/api/faculty/${editingId}` : "/api/faculty";
+      const method = editingId ? "PATCH" : "POST";
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        if (res.status === 401) {
+          throw new Error("Your admin session expired. Please sign out and sign back in, then try again.");
+        }
+        throw new Error(data.error || "Couldn't save this faculty member.");
       }
+
       setForm(EMPTY_FACULTY);
       setEditingId(null);
+      setStatus({ type: "success", message: editingId ? "Faculty member updated." : "Faculty member added." });
       onChanged();
+    } catch (err) {
+      setStatus({ type: "error", message: err.message });
     } finally {
       setSaving(false);
     }
@@ -345,6 +368,7 @@ function FacultyTab({ faculty, onChanged }) {
   function startEdit(f) {
     setEditingId(f._id);
     setForm({ ...EMPTY_FACULTY, ...f });
+    setStatus({ type: "", message: "" });
   }
 
   async function handleDelete(id) {
@@ -395,6 +419,11 @@ function FacultyTab({ faculty, onChanged }) {
           <label>Bio</label>
           <textarea name="bio" value={form.bio} onChange={handleChange} />
         </div>
+        {status.message && (
+          <div className={`alert ${status.type === "error" ? "alert-error" : "alert-success"}`}>
+            {status.message}
+          </div>
+        )}
         <div className="field full" style={{ flexDirection: "row", gap: 10 }}>
           <button className="btn btn-primary" type="submit" disabled={saving}>
             {saving ? "Saving…" : editingId ? "Save changes" : "Add faculty member"}
@@ -434,6 +463,124 @@ function FacultyTab({ faculty, onChanged }) {
           </tbody>
         </table>
       </div>
+    </div>
+  );
+}
+
+function MaterialsTab({ materials, onChanged, onDelete }) {
+  const EMPTY = { name: "", driveLink: "", order: 0 };
+  const [form, setForm] = useState(EMPTY);
+  const [editingId, setEditingId] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [status, setStatus] = useState({ type: "", message: "" });
+
+  function handleChange(e) {
+    const { name, value } = e.target;
+    setForm((f) => ({ ...f, [name]: name === "order" ? Number(value) : value }));
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setSaving(true);
+    setStatus({ type: "", message: "" });
+    try {
+      const url = editingId ? `/api/materials/${editingId}` : "/api/materials";
+      const method = editingId ? "PATCH" : "POST";
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Couldn't save this category.");
+      setForm(EMPTY);
+      setEditingId(null);
+      setStatus({ type: "success", message: editingId ? "Category updated." : "Category added." });
+      onChanged();
+    } catch (err) {
+      setStatus({ type: "error", message: err.message });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function startEdit(m) {
+    setEditingId(m._id);
+    setForm({ name: m.name, driveLink: m.driveLink, order: m.order || 0 });
+    setStatus({ type: "", message: "" });
+  }
+
+  return (
+    <div>
+      <form className="form" onSubmit={handleSubmit} style={{ marginBottom: 40 }}>
+        <div className="form-note">
+          {editingId
+            ? "Editing an existing folder link."
+            : "Add a folder shortcut, e.g. \"Software\", \"1-1\", \"1-2\", \"2-1\". Clicking it on the public site opens the Drive link directly."}
+        </div>
+        <div className="field">
+          <label>Name *</label>
+          <input name="name" value={form.name} onChange={handleChange} placeholder="e.g. 1-1" required />
+        </div>
+        <div className="field">
+          <label>Display order</label>
+          <input name="order" type="number" value={form.order} onChange={handleChange} />
+        </div>
+        <div className="field full">
+          <label>Google Drive link *</label>
+          <input name="driveLink" value={form.driveLink} onChange={handleChange} placeholder="https://drive.google.com/..." required />
+          <span className="field-hint">Make sure sharing is set to "Anyone with the link."</span>
+        </div>
+        {status.message && (
+          <div className={`alert ${status.type === "error" ? "alert-error" : "alert-success"}`}>
+            {status.message}
+          </div>
+        )}
+        <div className="field full" style={{ flexDirection: "row", gap: 10 }}>
+          <button className="btn btn-primary" type="submit" disabled={saving}>
+            {saving ? "Saving…" : editingId ? "Save changes" : "Add category"}
+          </button>
+          {editingId && (
+            <button type="button" className="btn btn-ghost" onClick={() => { setEditingId(null); setForm(EMPTY); }}>
+              Cancel
+            </button>
+          )}
+        </div>
+      </form>
+
+      {materials.length === 0 ? (
+        <div className="empty-state">No material folders added yet.</div>
+      ) : (
+        <div className="table-wrap">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Order</th>
+                <th>Drive link</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {materials.map((m) => (
+                <tr key={m._id}>
+                  <td>{m.name}</td>
+                  <td>{m.order ?? 0}</td>
+                  <td style={{ maxWidth: 260, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    <a href={m.driveLink} target="_blank" rel="noreferrer" style={{ color: "var(--wave-teal)" }}>{m.driveLink}</a>
+                  </td>
+                  <td>
+                    <div className="row-actions">
+                      <button className="btn btn-ghost btn-sm" onClick={() => startEdit(m)}>Edit</button>
+                      <button className="btn btn-danger btn-sm" onClick={() => onDelete(m._id)}>Delete</button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
