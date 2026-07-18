@@ -91,7 +91,7 @@ export default function WaveformHero() {
           />
         ))}
       </svg>
-      <div className="wave-logo-badge" style={{ left: `${(CONVERGE_START + (1 - CONVERGE_START) * 0.62) * 100}%` }}>
+      <div className="wave-logo-badge" style={{ left: `${(CONVERGE_START + (1 - CONVERGE_START) * 0.9) * 100}%` }}>
         <img src="/ostotorongo-logo.png" alt="OSTOTORONGO — NAOE-08" />
       </div>
     </div>
