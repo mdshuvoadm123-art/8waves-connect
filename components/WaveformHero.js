@@ -68,27 +68,32 @@ export default function WaveformHero() {
   });
 
   return (
-    <svg
-      className="waveform"
-      viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
-      preserveAspectRatio="none"
-      aria-hidden="true"
-    >
-      {lines.map((line, i) => (
-        <path
-          key={i}
-          d={line.d}
-          fill="none"
-          stroke={line.color}
-          strokeOpacity={line.opacity}
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeDasharray="8 6"
-          style={{
-            animation: `wave-drift ${line.duration}s linear infinite ${line.reverse ? "reverse" : "normal"}`,
-          }}
-        />
-      ))}
-    </svg>
+    <div className="waveform-wrap">
+      <svg
+        className="waveform"
+        viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
+        preserveAspectRatio="none"
+        aria-hidden="true"
+      >
+        {lines.map((line, i) => (
+          <path
+            key={i}
+            d={line.d}
+            fill="none"
+            stroke={line.color}
+            strokeOpacity={line.opacity}
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeDasharray="8 6"
+            style={{
+              animation: `wave-drift ${line.duration}s linear infinite ${line.reverse ? "reverse" : "normal"}`,
+            }}
+          />
+        ))}
+      </svg>
+      <div className="wave-logo-badge" style={{ left: `${(CONVERGE_START + (1 - CONVERGE_START) * 0.62) * 100}%` }}>
+        <img src="/ostotorongo-logo.png" alt="OSTOTORONGO — NAOE-08" />
+      </div>
+    </div>
   );
 }
