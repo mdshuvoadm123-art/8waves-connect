@@ -40,6 +40,10 @@ export default function OstotorongoPage() {
           <div className="hero-cta">
             <Link href="/ostotorongo/submit" className="btn btn-primary">Submit / update my details</Link>
           </div>
+
+          <div className="class-photo-frame">
+            <img src="/class-photo.jpg" alt="Our class, NAOE-08" className="class-photo" />
+          </div>
         </div>
       </section>
 

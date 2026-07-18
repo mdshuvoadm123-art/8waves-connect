@@ -266,6 +266,30 @@ p {
 .waveform .w2 { animation-duration: 11s; animation-direction: reverse; }
 .waveform .w3 { animation-duration: 15s; }
 
+/* ---------- Class photo frame ---------- */
+.class-photo-frame {
+  position: relative;
+  margin-top: 40px;
+  border-radius: var(--radius-lg);
+  padding: 3px;
+  background: linear-gradient(120deg, var(--wave-teal), var(--wave-violet), var(--wave-coral));
+  background-size: 200% 200%;
+  animation: frame-glow 8s ease infinite;
+  box-shadow: 0 0 40px rgba(45, 212, 191, 0.18), 0 0 80px rgba(139, 92, 246, 0.1);
+}
+@keyframes frame-glow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.class-photo {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: calc(var(--radius-lg) - 3px);
+  background: var(--bg);
+}
+
 /* ---------- Section shell ---------- */
 .section {
   padding: 96px 0;
