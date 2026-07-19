@@ -639,7 +639,10 @@ function NoticesTab({ notices, onChanged, onDelete }) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Couldn't add this notice.");
       setForm(EMPTY);
-      setStatus({ type: "success", message: "Notice added." });
+      let msg = "Notice added.";
+      if (data.emailResult?.error) msg += ` Email not sent: ${data.emailResult.error}`;
+      else if (data.emailResult?.sent) msg += ` Emailed ${data.emailResult.sent} classmate(s).`;
+      setStatus({ type: "success", message: msg });
       onChanged();
     } catch (err) {
       setStatus({ type: "error", message: err.message });
@@ -714,7 +717,10 @@ function ExamsTab({ exams, onChanged, onDelete }) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Couldn't add this exam entry.");
       setForm(EMPTY);
-      setStatus({ type: "success", message: "Exam entry added." });
+      let msg = "Exam entry added.";
+      if (data.emailResult?.error) msg += ` Email not sent: ${data.emailResult.error}`;
+      else if (data.emailResult?.sent) msg += ` Emailed ${data.emailResult.sent} classmate(s).`;
+      setStatus({ type: "success", message: msg });
       onChanged();
     } catch (err) {
       setStatus({ type: "error", message: err.message });
