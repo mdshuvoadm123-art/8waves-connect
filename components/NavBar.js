@@ -1,5 +1,6 @@
 "use client";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
 import Link from "next/link";
 
 const LINKS = [
@@ -32,13 +33,16 @@ export function BrandMark() {
 
 export default function NavBar() {
   const pathname = usePathname();
+  const [open, setOpen] = useState(false);
+
   return (
     <header className="nav">
       <div className="container nav-inner">
-        <Link href="/" className="brand">
+        <Link href="/" className="brand" onClick={() => setOpen(false)}>
           <BrandMark />
           8WAVES CONNECT
         </Link>
+
         <nav className="nav-links">
           {LINKS.map((l) => (
             <Link
@@ -50,7 +54,31 @@ export default function NavBar() {
             </Link>
           ))}
         </nav>
+
+        <button
+          className="nav-burger"
+          aria-label="Toggle menu"
+          aria-expanded={open}
+          onClick={() => setOpen((o) => !o)}
+        >
+          <span />
+          <span />
+          <span />
+        </button>
       </div>
+
+      <nav className={`nav-mobile ${open ? "is-open" : ""}`}>
+        {LINKS.map((l) => (
+          <Link
+            key={l.href}
+            href={l.href}
+            className={`nav-mobile-link ${pathname === l.href ? "is-active" : ""}`}
+            onClick={() => setOpen(false)}
+          >
+            {l.label}
+          </Link>
+        ))}
+      </nav>
     </header>
   );
 }
